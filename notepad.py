@@ -1,6 +1,7 @@
 from asyncio.windows_events import NULL
 from cProfile import label
 from ctypes import sizeof
+from itertools import count
 import re
 from textwrap import fill
 import tkinter as tk
@@ -8,10 +9,8 @@ import tkinter.ttk as ttk
 #from tkinter import *
 from tkinter import E, N, NE, NW, TOP, messagebox
 from tkinter.scrolledtext import ScrolledText
-import pickle
 from tkinter import filedialog, simpledialog
-from turtle import width
-from venv import create
+
 
 class Notepad:
 
@@ -23,6 +22,7 @@ class Notepad:
         self.root.title("Notepad")
         self.root.configure(bg="seashell2")
         self.root.resizable(width=True, height=True)
+        self.root.protocol("WM_DELETE_WINDOW", self.closeOverride)
 
         # Creating label
         self.label = create_label(self.root, text="Title", bg="light blue", font=("Times 20 italic bold"))
@@ -48,6 +48,13 @@ class Notepad:
         except:
             messagebox.showerror(title="Error", message="Not able to save.")
 
+    def closeOverride(self):
+        # Save
+        self.root.withdraw()
+
+    def openOverride(self):
+        self.root.deiconify()
+
 class create_label(tk.Label):
 
     # Creating entry & setting input actions
@@ -72,15 +79,11 @@ class create_label(tk.Label):
     def edit_stop(self, event=None):
         self.mytxt = self.entry.get()
         self.configure(text=self.entry.get())
-        Dock.getNote(0)
         self.entry.place_forget()
 
     def edit_cancel(self, event=None):
         self.entry.delete(0, "end")
         self.entry.place_forget()
-
-    def getTxt(self):
-        return self.mytxt
 
 class Dock:
 
@@ -90,13 +93,13 @@ class Dock:
         self.root = tk.Tk()
         self.pads = []
         self.labels = []
+        self.count = 0
         # Getting screen size
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
         # Original GUI size is 325x500
         w = 325
         h = 500
-        self.count = 0
         # Setting position of GUI on start up (subtract 40 for the taskbar)
         x = screen_width - w
         y = screen_height - h - 40
@@ -135,7 +138,7 @@ class Dock:
         minimize = tk.Button(titleFrame, text="\/", width=31, command=lambda: self.min_but(screen_width, screen_height, maximize, titleFrame, buttonFrame, folderFrame), relief="flat")
         minimize.pack(side=tk.TOP)
 
-        close = tk.Button(titleFrame, text="X", width=6, bg="firebrick1", command=lambda: self.root.destroy(), relief="flat")
+        close = tk.Button(titleFrame, text="X", width=6, bg="firebrick1", command=lambda: self.close_help(), relief="flat")
         close.place(x=273)
 
         settingsBut = tk.Button(titleFrame, text="O", width=6, bg="turquoise1", command=lambda: self.root.destroy(), relief="flat")
@@ -158,7 +161,7 @@ class Dock:
         # testFolder2 = tk.Button(folderFrame, text='F', width=5, height=2, bg="blue")
         # testFolder2.grid(column=2, row=0, sticky=tk.W, padx=(25, 0), pady=(15, 0))
 
-        newNote = tk.Button(buttonFrame, text="+", width=5, command=lambda: self.new_note(folderFrame), relief="flat")
+        newNote = tk.Button(buttonFrame, text="+", width=5, command=lambda: self.new_note(folderFrame, self.count), relief="flat")
         newNote.grid(column=1, row=0, sticky=tk.W, pady=(15,0))
 
         delNote = tk.Button(buttonFrame, text="-", width=5, command=lambda: print(self.pads[0].withdraw()), relief="flat")
@@ -179,6 +182,10 @@ class Dock:
         tf.pack_forget()
         bf.pack_forget()
         ff.pack_forget()
+        # for loop and hide all open notes
+        for x in self.pads:
+            x.closeOverride()
+        
         maxb.pack(side="top", fill='x')
         self.root.update_idletasks()
 
@@ -192,15 +199,21 @@ class Dock:
         ff.pack(padx=(22.5, 22.5))
         self.root.update_idletasks()
 
-    def new_note(self, frame):
-        label = tk.Button(frame, text="New label #%d" % (self.count), width=75)
+    # Create a new note
+    def new_note(self, frame, index):   # Have to pass self.count as index or else self.pads[self.count] does not accept input
+        self.pads.append(Notepad())
+        label = tk.Button(frame, text="New label #%d" % (index), width=75, command=lambda: self.pads[index].openOverride(), relief="flat")
         label.grid(column=2, row=self.count, sticky=tk.N, pady=(0, 10))
         self.labels.append(label)
         self.count += 1
-        self.pads.append(Notepad())
 
-    def testfunc(self):
+    # Saves and destroys all notes when closing dock
+    def close_help(self):
         for x in self.pads:
-            print(x)
-
+            x.root.destroy()
+        
+        self.pads.clear()
+        self.labels.clear()
+        self.root.destroy()
+        
 app=Dock()
