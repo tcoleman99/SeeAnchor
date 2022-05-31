@@ -122,7 +122,7 @@ class Dock(object):
     # Create a new note
     def new_note(self, frame, index):   # Have to pass self.count as index or else self.pads[self.count] does not accept input
         self.pads.append(Notepad(self))
-        self.label = tk.Button(frame, text="New label #%d" % (index), width=75, command=lambda: [self.pads[index].openOverride(), self.sync()], relief="flat")
+        self.label = tk.Button(frame, text="New label #%d" % (index), width=75, command=lambda: [self.pads[index].openOverride()], relief="flat")
         self.label.grid(column=2, row=self.count, sticky=tk.N, pady=(0, 10))
         self.labels.append(self.label)
         self.count += 1
@@ -136,11 +136,6 @@ class Dock(object):
         self.labels.clear()
         self.root.destroy()
 
-    def sync(self):
-        print(self.pads[0].label.getTitle(self))
-        txt = self.pads[0].getLabel()
-        self.labels[0].configure(text=txt)
-
 class Notepad(Dock):
 
     def __init__(self, parent):
@@ -153,11 +148,13 @@ class Notepad(Dock):
         self.root.resizable(width=True, height=True)
         self.root.protocol("WM_DELETE_WINDOW", self.closeOverride)
         self.root.resizable(0,0)
+        self.myparent = parent
 
         self.filename = "file_" + str(random.randrange(10000, 50000))
 
         # Creating label
         self.label = create_label(self.root, text="Title", bg="light blue", font=("Times 20 italic bold"))
+        self.label.myparent = parent    # To set the main application as the parent of create_label
         self.label.pack(side="top", fill="x")
 
         # Padding text within the main text box (left, top, right, bottom)
@@ -168,11 +165,7 @@ class Notepad(Dock):
         self.notepad.configure(padx=12)
         self.notepad.pack(padx=1, pady=1)
 
-        button1 = tk.Button(self.root, text="Foo", width=5, command=lambda: self.root.withdraw())
-        button1.pack()
-
         print(parent.count)
-        #print(parent.pads[0].label)
 
     def closeOverride(self):
         self.saveFile()
@@ -189,27 +182,19 @@ class Notepad(Dock):
         # file1.write(self.notepad.get("1.0","end-1c"))
         # file1.close()
 
-    def updateDockLabel(self):
-        print(" ")
-        #super().pads[super().count] = self.label.getTitle(self)
-
-    def getLabel(self):
-        return self.label.getTitle(self)
-
-class create_label(tk.Label, Notepad):
+class create_label(tk.Label):
 
     # Creating entry & setting input actions
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.entry = tk.Entry(self, bg="white", justify="center")
         self.bind("<Double-1>", self.edit_start)
-        self.entry.bind("<Return>", self.edit_stop(parent))
+        self.entry.bind("<Return>", self.edit_stop)
         self.entry.bind("<FocusOut>", self.edit_stop)
         self.entry.bind("<Escape>", self.edit_cancel)
+        self.myparent = None
 
-        self.mytxt = ""
         self.row = 0
-        print(parent.count)
 
     def edit_start(self, event=None):
         self.entry.place(relx=.5, rely=.5, relwidth=1.0, relheight=1.0, anchor="center")
@@ -221,11 +206,9 @@ class create_label(tk.Label, Notepad):
     def edit_stop(self, event=None):
         self.configure(text=self.entry.get())
         self.entry.place_forget()
-        super().updateDockLabel()
+        self.myparent.labels[0].configure(text=self.entry.get())
 
     def edit_cancel(self, event=None):
         self.entry.delete(0, "end")
         self.entry.place_forget()
-
-    def getTitle(self, parent):
-        return parent.label.cget("text")
+        self.myparent.labels[0].configure(text=self.entry.get())
