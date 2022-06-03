@@ -1,14 +1,11 @@
 from asyncio.windows_events import NULL
-from multiprocessing import parent_process
+from cgi import test
 import tkinter as tk
 import tkinter.ttk as ttk
-from tkinter import E, N, NE, NW, TOP, messagebox
-import tkinter as tk
-import tkinter.ttk as ttk
+from tkinter import E, N, NE, NW, TOP, W, Toplevel, messagebox
 from tkinter.scrolledtext import ScrolledText
 import random
-from venv import create
-
+from turtle import bgcolor
 
 class Dock(object):
 
@@ -17,7 +14,7 @@ class Dock(object):
         # Creating dock widget
         self.root = tk.Tk()
         self.pads = []
-        self.labels = []
+        self.notepad_list = []
         self.count = 0
         # Getting screen size
         screen_width = self.root.winfo_screenwidth()
@@ -31,44 +28,81 @@ class Dock(object):
         # For getting size of current window?
         self.root.update_idletasks()
 
-        self.root.overrideredirect(True)
+        #self.root.overrideredirect(True)
         self.root.geometry('%dx%d+%d+%d' % (w, h, x, y))
-        self.root.title("Dock")
         self.root.configure(bg="gray36")
-        self.root.resizable(width=False, height=False)
+        #self.root.resizable(width=False, height=False)
 
-        titleFrame = tk.Frame(self.root, width=325, height=25, bg="gray36")
-        titleFrame.pack_propagate(False)
-        titleFrame.pack(side=tk.TOP)
-        titleFrame.columnconfigure(0, weight=1)
-        titleFrame.columnconfigure(1, weight=3)
-        titleFrame.columnconfigure(2, weight=1)
+        self.titleFrame = tk.Frame(self.root, width=325, height=25, bg="gray36")
+        self.titleFrame.pack_propagate(False)
+        self.titleFrame.pack(side=tk.TOP)
+        self.titleFrame.columnconfigure(0, weight=1)
+        self.titleFrame.columnconfigure(1, weight=3)
+        self.titleFrame.columnconfigure(2, weight=1)
 
-        buttonFrame = tk.Frame(self.root, width=325, height=55, bg="grey36")
-        buttonFrame.grid_propagate(False)
-        buttonFrame.pack()
-        buttonFrame.columnconfigure(0, weight=2)
-        buttonFrame.columnconfigure(1, weight=2)
-        buttonFrame.columnconfigure(2, weight=2)
+        self.buttonFrame = tk.Frame(self.root, width=325, height=55, bg="grey36")
+        self.buttonFrame.grid_propagate(False)
+        self.buttonFrame.pack()
+        self.buttonFrame.columnconfigure(0, weight=2)
+        self.buttonFrame.columnconfigure(1, weight=2)
+        self.buttonFrame.columnconfigure(2, weight=2)
 
-        folderFrame = tk.Frame(self.root, width=280, height=400, bg="gray69")
-        folderFrame.grid_propagate(False)
-        folderFrame.pack(padx=(22.5, 22.5))
-        folderFrame.columnconfigure(0, weight=1)
-        folderFrame.columnconfigure(1, weight=2)
-        folderFrame.columnconfigure(2, weight=1)
+        self.folderFrame = ttk.Frame(self.root, width=280, height=400) # w=280, h=400
+        self.folderFrame.grid_propagate(False)
+        self.folderFrame.columnconfigure(0, weight=1)
+        self.folderFrame.columnconfigure(1, weight=2)
+        self.folderFrame.columnconfigure(2, weight=1)
+
+        canvas = tk.Canvas(self.folderFrame, width=240, height=150, bg="grey69")
+        scrollbar = ttk.Scrollbar(self.folderFrame, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+
+        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        for i in range(50):
+            ttk.Label(scrollable_frame, text="Test").pack()
+
+        self.folderFrame.pack(padx=(22.5, 22.5))
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # container = ttk.Frame(self.root)
+        # canvas = tk.Canvas(container)
+        # scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        # scrollable_frame = ttk.Frame(canvas)
+
+        # scrollable_frame.bind(
+        #     "<Configure>",
+        #     lambda e: canvas.configure(
+        #         scrollregion=canvas.bbox("all")
+        #     )
+        # )
+
+        # canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+
+        # canvas.configure(yscrollcommand=scrollbar.set)
+
+        # for i in range(50):
+        #     ttk.Label(scrollable_frame, text="Sample scrolling label").pack()
+
+        # container.pack()
+        # canvas.pack(side="left", fill="both", expand=True)
+        # scrollbar.pack(side="right", fill="y")
+
 
         # Button creation for max & min dock
-        minimize = tk.Button(titleFrame, text="\/", width=31, command=lambda: self.min_but(screen_width, screen_height, maximize, titleFrame, buttonFrame, folderFrame), relief="flat")
+        minimize = tk.Button(self.titleFrame, text="\/", width=31, command=lambda: self.min_but(screen_width, screen_height, maximize, self.titleFrame, self.buttonFrame, self.folderFrame), relief="flat")
         minimize.pack(side=tk.TOP)
 
-        close = tk.Button(titleFrame, text="X", width=6, bg="firebrick1", command=lambda: self.close_help(), relief="flat")
+        close = tk.Button(self.titleFrame, text="X", width=6, bg="firebrick1", command=lambda: self.close_help(), relief="flat")
         close.place(x=273)
 
-        settingsBut = tk.Button(titleFrame, text="O", width=6, bg="turquoise1", command=lambda: self.close_help(), relief="flat")
+        settingsBut = tk.Button(self.titleFrame, text="O", width=6, bg="turquoise1", command=lambda: self.close_help(), relief="flat")
         settingsBut.place(x=0)
 
-        maximize = tk.Button(self.root, text="/\\",command=lambda: self.max_but(w, h, x, y, maximize, titleFrame, buttonFrame, folderFrame), relief="flat")
+        maximize = tk.Button(self.root, text="/\\",command=lambda: self.max_but(w, h, x, y, maximize, self.titleFrame, self.buttonFrame, self.folderFrame), relief="flat")
 
         # testLabel = tk.Label(folderFrame, text="New notepad", width=75)
         # testLabel.grid(column=2, row=0, sticky=tk.N, pady=(0, 10))
@@ -85,11 +119,13 @@ class Dock(object):
         # testFolder2 = tk.Button(folderFrame, text='F', width=5, height=2, bg="blue")
         # testFolder2.grid(column=2, row=0, sticky=tk.W, padx=(25, 0), pady=(15, 0))
 
-        newNote = tk.Button(buttonFrame, text="+", width=5, command=lambda: self.new_note(folderFrame, self.count), relief="flat")
-        newNote.grid(column=1, row=0, sticky=tk.W, pady=(15,0))
+        newNote = tk.Button(self.buttonFrame, text="+", width=5, command=lambda: self.new_note(self.folderFrame, self.count), relief="flat")
+        newNote.grid(column=1, row=0, sticky=W, pady=(15,0))
 
-        delNote = tk.Button(buttonFrame, text="-", width=5, command=lambda: self.sync(), relief="flat")
-        delNote.grid(column=1, row=0, sticky=tk.E, pady=(15,0))
+        self.editable = False
+
+        delNote = tk.Button(self.buttonFrame, text="Edit", width=5, command=lambda: self.set_editable(), relief="flat")
+        delNote.grid(column=1, row=0, sticky=E, pady=(15,0))
 
         # Sets the app to always be in foreground
         self.root.attributes("-topmost", True)
@@ -121,63 +157,108 @@ class Dock(object):
 
     # Create a new note
     def new_note(self, frame, index):   # Have to pass self.count as index or else self.pads[self.count] does not accept input
-        self.pads.append(Notepad(self))
-        self.label = tk.Button(frame, text="New label #%d" % (index), width=75, command=lambda: [self.pads[index].openOverride()], relief="flat")
+        self.pads.append(Notepad(self, self.count))
+        # pixelVirtual = tk.PhotoImage(master = self.folderFrame, width=1, height=1)
+        self.label = tk.Button(frame, text="New label #%d" % (index), width=40, command=lambda: [self.pads[index].openOverride()], relief="flat")
         self.label.grid(column=2, row=self.count, sticky=tk.N, pady=(0, 10))
-        self.labels.append(self.label)
+        if(self.editable == True):
+            self.label["state"] = "disabled"
+            Dock.make_draggable(self.label)
+        self.notepad_list.append(self.label)
         self.count += 1
 
     # Saves and destroys all notes when closing dock
     def close_help(self):
         for x in self.pads:
-            x.root.destroy()
+            x.top.destroy()
 
         self.pads.clear()
-        self.labels.clear()
+        self.notepad_list.clear()
         self.root.destroy()
+
+    def set_editable(self):
+        if(len(self.notepad_list) > 0 and self.editable == False):
+            for x in self.notepad_list:
+                x["state"] = "disabled"
+                Dock.make_draggable(x)
+            self.editable = True
+            print(str(self.editable) + " if")
+        elif(len(self.notepad_list) > 0 and self.editable == True):
+            for x in self.notepad_list:
+                Dock.make_undraggable(x)
+                x["state"] = "normal"
+            print(str(self.editable) + " elif")
+            self.editable = False
+        else:
+            self.editable = False
+            print(str(self.editable) + " else")
+
+
+    # For drag and drop of labels in dock (Maybe)
+    def make_draggable(widget):
+        widget.bind("<Button-1>", Dock.on_drag_start)
+        widget.bind("<B1-Motion>", Dock.on_drag_motion)
+        widget.configure(width=40) # 273
+
+    def make_undraggable(widget):
+        widget.unbind("<Button-1>")
+        widget.unbind("<B1-Motion>")
+
+    def on_drag_start(event):
+        widget = event.widget
+        widget._drag_start_y = event.y
+
+    def on_drag_motion(event):
+        widget = event.widget
+        y = widget.winfo_y() - widget._drag_start_y + event.y
+        if(y < 0):
+            widget.place(y=0)
+        else:
+            widget.place(y=y)
 
 class Notepad(Dock):
 
-    def __init__(self, parent):
+    def __init__(self, parent, position):
         # the root widget
-        self.root = tk.Tk()
-        self.root.geometry("325x325")
-        self.root.eval("tk::PlaceWindow  .   center")
-        self.root.title("Notepad")
-        self.root.configure(bg="seashell2")
-        self.root.resizable(width=True, height=True)
-        self.root.protocol("WM_DELETE_WINDOW", self.closeOverride)
-        self.root.resizable(0,0)
-        self.myparent = parent
+        self.top = Toplevel()
+        self.top.geometry("325x325")
+        #self.top.eval("tk::PlaceWindow  .   center")
+        self.top.title("Notepad")
+        self.top.configure(bg="seashell2")
+        self.top.resizable(width=True, height=True)
+        self.top.protocol("WM_DELETE_WINDOW", self.closeOverride)
+        self.top.resizable(0,0)
+        self.position = position
 
         self.filename = "file_" + str(random.randrange(10000, 50000))
 
         # Creating label
-        self.label = create_label(self.root, text="Title", bg="light blue", font=("Times 20 italic bold"))
-        self.label.myparent = parent    # To set the main application as the parent of create_label
+        self.label = create_label(self.top, text="Title", bg="light blue", font=("Times 20 italic bold"))
+        self.label.newParent = parent    # To set the main application as the parent of create_label
+        self.label.row = self.position
         self.label.pack(side="top", fill="x")
 
         # Padding text within the main text box (left, top, right, bottom)
         ttk.Style().configure("pad.TEntry", padding="5 1 5 1")
 
         # Creating scrollable notepad window
-        self.notepad = ScrolledText(self.root, font=("Bold", 15), bg="seashell2", relief="flat")
+        self.notepad = ScrolledText(self.top, font=("Bold", 15), bg="seashell2", relief="flat")
         self.notepad.configure(padx=12)
         self.notepad.pack(padx=1, pady=1)
 
-        print(parent.count)
-
     def closeOverride(self):
         self.saveFile()
-        self.root.withdraw()
+        self.top.withdraw()
 
     def openOverride(self):
+        print(self.position)
         self.saveFile()
-        self.root.deiconify()
+        self.top.deiconify()
 
     def saveFile(self):
-        print(self.filename)
+        print(" ")
         # file1 = open(self.filename + ".txt", "w")
+        # file1.write(str(self.label.position) + "\n")
         # file1.write(self.label.getTitle(self) + "\n")
         # file1.write(self.notepad.get("1.0","end-1c"))
         # file1.close()
@@ -192,23 +273,23 @@ class create_label(tk.Label):
         self.entry.bind("<Return>", self.edit_stop)
         self.entry.bind("<FocusOut>", self.edit_stop)
         self.entry.bind("<Escape>", self.edit_cancel)
-        self.myparent = None
-
-        self.row = 0
+        self.newParent = None
+        self.row = None
 
     def edit_start(self, event=None):
         self.entry.place(relx=.5, rely=.5, relwidth=1.0, relheight=1.0, anchor="center")
-        info = self.grid_info()
-        if(self.row != NULL):
-            self.row = info["row"]
+        # info = self.grid_info()
+        # if(self.row != NULL):
+        #     self.row = info["row"]
+        print(self.row)
         self.entry.focus_set()
 
     def edit_stop(self, event=None):
         self.configure(text=self.entry.get())
         self.entry.place_forget()
-        self.myparent.labels[0].configure(text=self.entry.get())
+        self.newParent.notepad_list[self.row].configure(text=self.entry.get())
 
     def edit_cancel(self, event=None):
         self.entry.delete(0, "end")
         self.entry.place_forget()
-        self.myparent.labels[0].configure(text=self.entry.get())
+        self.newParent.notepad_list[self.row].configure(text=self.entry.get())
