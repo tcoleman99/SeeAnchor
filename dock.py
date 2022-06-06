@@ -16,17 +16,23 @@ class Dock(object):
         self.pads = []
         self.notepad_list = []
         self.count = 0
+        self.editable = False
+
         # Getting screen size
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
+
         # Original GUI size is 325x500
         w = 325
         h = 500
+
         # Setting position of GUI on start up (subtract 40 for the taskbar)
         x = screen_width - w
         y = screen_height - h - 40
+
         # For getting size of current window?
         self.root.update_idletasks()
+
         # Setting up frames for root window, title, buttons, and notepad list
         self.root.overrideredirect(True)
         self.root.geometry('%dx%d+%d+%d' % (w, h, x, y))
@@ -49,16 +55,16 @@ class Dock(object):
 
         self.folderFrame = tk.Frame(self.root, width=280, height=400) # w=280, h=400
         self.folderFrame.grid_propagate(False)
+        self.folderFrame.pack()
         self.folderFrame.columnconfigure(0, weight=1)
         self.folderFrame.columnconfigure(1, weight=2)
         self.folderFrame.columnconfigure(2, weight=1)
-        self.folderFrame.pack()
 
         # Creating scrollable canvas for note buttons to reside on
-        self.canvas = tk.Canvas(self.folderFrame, width=265, height=365, bg="grey69")
+        self.canvas = tk.Canvas(self.folderFrame, width=265, height=365, bg="turquoise1")
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
         scrollbar = ttk.Scrollbar(self.folderFrame, orient="vertical", command=self.canvas.yview)
-        scrollable_frame = tk.Frame(self.canvas, width=265, height=365, bg="blue")
+        scrollable_frame = tk.Frame(self.canvas, width=265, height=365, bg="lime green")
 
         scrollable_frame.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
         self.canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
@@ -68,7 +74,7 @@ class Dock(object):
         self.canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-        # Button creation for max & min dock
+        # Button creation
         minimize = tk.Button(self.titleFrame, text="\/", width=31, command=lambda: self.min_but(screen_width, screen_height, maximize, self.titleFrame, self.buttonFrame, self.folderFrame), relief="flat")
         minimize.pack(side=tk.TOP)
 
@@ -83,8 +89,6 @@ class Dock(object):
         newNote = tk.Button(self.buttonFrame, text="+", width=5, command=lambda: self.new_note(scrollable_frame, self.count), relief="flat")
         newNote.grid(column=1, row=0, sticky=W, pady=(15,0))
 
-        self.editable = False
-
         delNote = tk.Button(self.buttonFrame, text="Edit", width=5, command=lambda: self.set_editable(), relief="flat")
         delNote.grid(column=1, row=0, sticky=E, pady=(15,0))
 
@@ -93,6 +97,8 @@ class Dock(object):
         self.root.update()
         self.root.mainloop()
     
+    # ----------------------------------FUNCTIONS--------------------------------------
+
     # Minimize button
     def min_but(self, scw, sch, maxb, tf, bf, ff):
         self.root.geometry('%dx%d+%d+%d' % (25, 25, (scw - 50), (sch - 65)))
@@ -116,10 +122,10 @@ class Dock(object):
         ff.pack(padx=(22.5, 22.5))
         self.root.update_idletasks()
 
-    # Create a new note
+    # Create a new note, makes new entries in lists, makes button draggable if edit is enabled
     def new_note(self, frame, index):   # Have to pass self.count as index or else self.pads[self.count] does not accept input
         self.pads.append(Notepad(self, self.count))
-        self.label = tk.Button(frame, text="New label #%d" % (index), width=35, command=lambda: [self.pads[index].openOverride()], relief="flat")
+        self.label = tk.Button(frame, text="New label #%d" % (index), width=36, command=lambda: [self.pads[index].openOverride()], relief="flat")
         self.label.grid(column=0, row=self.count, sticky=tk.E, pady=(0, 10))
         if(self.editable == True):
             self.label["state"] = "disabled"
@@ -135,6 +141,7 @@ class Dock(object):
         self.notepad_list.clear()
         self.root.destroy()
 
+    # For drag and drop of labels in dock
     def set_editable(self):
         if(len(self.notepad_list) > 0 and self.editable == False):
             for x in self.notepad_list:
@@ -152,8 +159,6 @@ class Dock(object):
             self.editable = False
             print(str(self.editable) + " else")
 
-
-    # For drag and drop of labels in dock (Maybe)
     def make_draggable(widget):
         widget.bind("<Button-1>", Dock.on_drag_start)
         widget.bind("<B1-Motion>", Dock.on_drag_motion)
