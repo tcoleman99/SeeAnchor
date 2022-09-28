@@ -14,14 +14,16 @@ class custom_button(tk.Button):
         self.configure(bg=self.bgcolor)
 
 
-    def change_color(self, button):
+    def change_color(self, button, note):
         colors = askcolor(title="Background Color")
         self.bgcolor = colors[1]
         button.configure(bg=self.bgcolor)
+        note.saveFile()
 
-    def font_color(self, button):
+    def font_color(self, button, note):
         colors = askcolor(title="Font Color")
         button.configure(fg=colors[1])
+        note.saveFile()
 
     def anchor_unlock(self, button, window, location):
         button.locked = False

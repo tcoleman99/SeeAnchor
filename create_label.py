@@ -20,9 +20,9 @@ class create_label(tk.Label):
     def edit_stop(self, event=None):
         self.configure(text=self.entry.get())
         self.entry.place_forget()
-        self.newParent.button_list[self.row].configure(text=self.entry.get())
+        self.newParent.note_button_list[self.row].configure(text=self.entry.get())
 
     def edit_cancel(self, event=None):
         self.entry.delete(0, "end")
         self.entry.place_forget()
-        self.newParent.button_list[self.row].configure(text=self.entry.get())
+        self.newParent.note_button_list[self.row].configure(text=self.entry.get())
