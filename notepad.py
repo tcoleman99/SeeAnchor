@@ -20,6 +20,8 @@ class Notepad(dock.Dock):
         self.top.protocol("WM_DELETE_WINDOW", self.closeOverride)
         self.top.resizable(0,0)
         self.parent = parent
+        self.corresponding_button = None
+        self.button_row = None
 
         # self.filename = "file_" + str(random.randrange(10000, 50000))
 
@@ -29,7 +31,7 @@ class Notepad(dock.Dock):
         self.titleLabel.row = position
         self.titleLabel.pack(side="top", fill="x")
 
-        self.filename = "C:\See Anchor\\" + self.titleLabel.cget("text") + ".txt"
+        self.filename = "C:\See Anchor\\Notes\\" + self.titleLabel.cget("text") + ".txt"
 
         # Padding text within the main text box (left, top, right, bottom)
         ttk.Style().configure("pad.TEntry", padding="5 1 5 1")
@@ -44,22 +46,30 @@ class Notepad(dock.Dock):
         self.top.withdraw()
 
     def openOverride(self):
-        self.titleLabel.configure(bg=self.parent.note_button_list[int(self.titleLabel.row)].cget("bg"))
-        self.titleLabel.configure(fg=self.parent.note_button_list[int(self.titleLabel.row)].cget("fg"))
+        self.titleLabel.configure(bg=self.corresponding_button.cget("bg"))
+        self.titleLabel.configure(fg=self.corresponding_button.cget("fg"))
+        #self.titleLabel.configure(bg=self.parent.note_button_list[int(self.titleLabel.row)].cget("bg"))
+        #self.titleLabel.configure(fg=self.parent.note_button_list[int(self.titleLabel.row)].cget("fg"))
         self.saveFile()
         self.top.deiconify()
 
     def saveFile(self):
         try:
-            newFileName = "C:\See Anchor\\" + self.titleLabel.cget("text") + ".txt"
-            os.rename(self.filename, newFileName)
+            newFileName = "C:\See Anchor\\Notes\\" + self.titleLabel.cget("text") + ".txt"
+            try:
+                os.rename(self.filename, newFileName)
+            except:
+                pass
             self.filename = newFileName
             f = open(self.filename, 'w')
-            f.write(str(self.titleLabel.row) + "\n")
-            f.write(self.titleLabel.cget("bg") + "\n")
-            f.write(self.titleLabel.cget("fg") + "\n")
+            f.write(str(self.corresponding_button.grid_info()["row"]) + "\n")
+            f.write(self.corresponding_button.cget("bg") + "\n")
+            f.write(self.corresponding_button.cget("fg") + "\n")
             f.write(self.titleLabel.cget("text") + "\n")
             f.write(self.notepad.get("1.0", "end-1c"))
             f.close()
         except:
             pass
+
+    def set_button(self, button):
+        self.corresponding_button = button

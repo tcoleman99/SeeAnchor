@@ -39,9 +39,11 @@ class Dock(object):
         self.secondaryColor = "SkyBlue1"
         self.font = "Forte"
 
-        self.path = "C:\See Anchor"
+        self.notes_path = "C:\See Anchor\\Notes\\"
+        self.reminders_path = "C:\See Anchor\\Reminders\\"
         try:
-            os.mkdir(self.path)
+            os.mkdir(self.notes_path)
+            os.mkdir(self.reminders_path)
         except:
             pass
 
@@ -93,7 +95,6 @@ class Dock(object):
         self.buttonFrame.columnconfigure(2, weight=2)
 
         self.testlabel = tk.Label(self.navigationFrame, width=15, text="NOTES", bg="gray39", fg="white", font=(self.font, "21", "underline"))
-        # print(font.families())
 
         # Creating scrollable canvas for note buttons to reside on
 
@@ -159,10 +160,10 @@ class Dock(object):
         settingsBut.place(x=0)
 
         self.maximize = custom_button.custom_button(self.root, text="/\\",command=lambda: self.max_but(), bg="medium spring green", relief="flat")
-        self.maximize.menu.add_command(label="Color", command=partial(self.maximize.change_color, self.maximize))
-        self.maximize.menu.add_command(label="Font Color", command=partial(self.maximize.font_color, self.maximize))
+        self.maximize.menu.add_command(label="Color", command=partial(self.maximize.change_color, self.maximize, self.notepads))
+        self.maximize.menu.add_command(label="Font Color", command=partial(self.maximize.font_color, self.maximize, self.notepads))
         self.maximize.menu.add_separator()
-        self.maximize.menu.add_command(label="Unlock", command=partial(self.maximize.anchor_unlock, self.maximize, self.root, self.maximize.x_location))
+        self.maximize.menu.add_command(label="Unlock", command=partial(self.maximize.anchor_unlock, self.maximize, self.root, self.maximize.x_location, self.notepads))
         self.maximize.bind("<Button-3>", self.maximize.color_popup)
 
         newNote = tk.Button(self.buttonFrame, text="+", width=5, command=lambda: self.new_note(self.note_count), font=self.font)
@@ -245,21 +246,30 @@ class Dock(object):
         self.t1 = tk.Label(self.RL_canvas, text="You have no Reminders", width=36, height=23, bg="gray39", fg="white", font=self.font)
         self.t1.pack()
 
-        dir = os.listdir(self.path)
+        dir = os.listdir(self.notes_path)
+        self.note_order = []
         if(len(dir) == 0):
             print("empty")
         else:
             self.no_note_cover.pack_forget()
             count = 0
-            for filename in os.listdir(self.path):
-                with open(os.path.join(self.path, filename), 'r'):
-                    self.read_note(self.path + "\\" + filename, count)
+            for filename in os.listdir(self.notes_path):
+                for x in range(len(dir)):
+                    f = open(self.notes_path + filename, 'r')
+                    Lines = f.readlines()
+                    if(int(Lines[0].rstrip('\n')) == x):
+                        self.note_order.append(Lines[3].rstrip('\n'))
+                    else:
+                        pass
+                    f.close()
+                with open(os.path.join(self.notes_path, filename), 'r'):
+                    self.read_note(self.notes_path + filename, count)
                     count += 1
-            for x in range(len(self.note_button_list)):
-                if(self.notepads[x].titleLabel.row == x):
-                    self.note_button_list[x].grid(column=0, columnspan=2, row=x, sticky=tk.N+tk.S+tk.E+tk.W, pady=(0, 10))
-                else:
-                    pass
+            # for x in range(len(self.note_button_list)):
+            #     if(self.notepads[x].titleLabel.row == x):
+            #         self.note_button_list[x].grid(column=0, columnspan=2, row=x, sticky=tk.N+tk.S+tk.E+tk.W, pady=(0, 10))
+            #     else:
+            #         pass
 
         # Sets the app to always be in foreground and runs
         self.root.attributes("-topmost", True)
@@ -272,8 +282,6 @@ class Dock(object):
     # **************************
 
     def arrow_right(self):
-        # if(len(self.reminders) == 0):
-        #     self.t1.pack()
         self.testlabel.configure(text="REMINDERS")
         self.buttonFrame.place_forget()
         self.folderFrame.pack_forget()
@@ -283,8 +291,6 @@ class Dock(object):
         self.left["state"] = NORMAL
 
     def arrow_left(self):
-        # if(len(self.notepads) == 0):
-        #     self.t2.pack()
         self.testlabel.configure(text="NOTES")
         self.reminderList.pack_forget()
         self.RL_buttons.place_forget()
@@ -349,13 +355,14 @@ class Dock(object):
         from notepad import Notepad
         self.notepads.append(Notepad(self, self.note_count))
         self.notepads[index].closeOverride()
-        self.notepadButton = custom_button.custom_button(self.scrollable_frame, text="New label #%d" % (index), width=32, command=lambda: [self.notepads[index].openOverride()], relief="flat", font=(self.font, "12"))
-        self.notepadButton.menu.add_command(label="Color", command=partial(self.notepadButton.change_color, self.notepadButton, self.notepads[index]))
-        self.notepadButton.menu.add_command(label="Font Color", command=partial(self.notepadButton.font_color, self.notepadButton, self.notepads[index]))
+        self.notepadButton = custom_button.custom_button(self.scrollable_frame, text="Title %d" % (index), width=32, command=lambda: [self.notepads[index].openOverride()], relief="flat", font=(self.font, "12"))
+        self.notepadButton.menu.add_command(label="Color", command=partial(self.notepadButton.change_color, self.notepadButton, self.notepads))
+        self.notepadButton.menu.add_command(label="Font Color", command=partial(self.notepadButton.font_color, self.notepadButton, self.notepads))
         self.notepadButton.menu.add_separator()
         self.notepadButton.menu.add_command(label="Delete", command=partial(self.delete_note, self.notepadButton))
-        self.notepadButton.grid(column=0, columnspan=2, row=self.note_count+1, sticky=tk.N+tk.S+tk.E+tk.W, pady=(0, 10))
+        self.notepadButton.grid(column=0, columnspan=2, row=self.note_count, sticky=tk.N+tk.S+tk.E+tk.W, pady=(0, 10))
         self.notepadButton.bind("<Button-3>", self.notepadButton.color_popup)
+        self.notepads[index].set_button(self.notepadButton)
         self.note_button_list.append(self.notepadButton)
         self.note_count += 1
 
@@ -371,33 +378,32 @@ class Dock(object):
 
     def read_note(self, file, index):
         from notepad import Notepad
-        num_lines = sum(1 for line in open(file))
-        print(num_lines)
-        print("---+++++")
         f = open(file, 'r')
         Lines = f.readlines()
         self.notepads.append(Notepad(self, self.note_count))
-        self.notepads[index].titleLabel.row = int(Lines[0].rstrip('\n'))
+        self.notepads[index].button_row = int(Lines[0].rstrip('\n'))
         self.notepads[index].titleLabel.configure(bg=Lines[1].rstrip('\n'))
         self.notepads[index].titleLabel.configure(fg=Lines[2].rstrip('\n'))
         self.notepads[index].titleLabel.configure(text=Lines[3].rstrip('\n'))
         self.notepads[index].notepad.insert(INSERT, Lines[4:])
-        self.notepads[index].closeOverride()
         f.close()
         self.notepadButton = custom_button.custom_button(self.scrollable_frame, text=self.notepads[index].titleLabel.cget("text"), width=32, command=lambda: [self.notepads[index].openOverride()], relief="flat", font=(self.font, "12"), bg=self.notepads[index].titleLabel.cget("bg"), fg=self.notepads[index].titleLabel.cget("fg"))
         self.note_button_list.append(self.notepadButton)
-        self.notepadButton.menu.add_command(label="Color", command=partial(self.notepadButton.change_color, self.notepadButton, self.notepads[index]))
-        self.notepadButton.menu.add_command(label="Font Color", command=partial(self.notepadButton.font_color, self.notepadButton, self.notepads[index]))
+        self.notepadButton.menu.add_command(label="Color", command=partial(self.notepadButton.change_color, self.notepadButton, self.notepads))
+        self.notepadButton.menu.add_command(label="Font Color", command=partial(self.notepadButton.font_color, self.notepadButton, self.notepads))
         self.notepadButton.menu.add_separator()
         self.notepadButton.menu.add_command(label="Delete", command=partial(self.delete_note, self.notepadButton))
         self.notepadButton.bind("<Button-3>", self.notepadButton.color_popup)
-        # self.notepadButton.grid(column=0, columnspan=2, row=self.notepads[index].titleLabel.row, sticky=tk.N+tk.S+tk.E+tk.W, pady=(0, 10))
+        self.notepadButton.grid(column=0, columnspan=2, row=self.notepads[index].button_row, sticky=tk.N+tk.S+tk.E+tk.W, pady=(0, 10))
+        self.notepads[index].set_button(self.notepadButton)
+        self.notepads[index].titleLabel.configure(bg=self.notepads[index].corresponding_button.cget("bg"))
         self.note_count += 1
+        self.notepads[index].closeOverride()
 
     def delete_note(self, button):
         answer = askyesno(title="Confirm", message="Are you sure you want to delete this note? You will not be able to revert this decision.")
         if answer:
-            path = self.path + "\\" + button.cget("text") + ".txt"
+            path = self.notes_path + button.cget("text") + ".txt"
             os.remove(path)
             self.note_count -= 1
             self.toDelete = None
@@ -405,14 +411,19 @@ class Dock(object):
             for l in range(len(self.note_button_list)):
                 if(self.note_button_list[l] == button):
                     self.toDelete = l
+                    break
             del self.note_button_list[self.toDelete]
             del self.notepads[self.toDelete]
             for x in self.notepads[self.toDelete:]:
                 x.titleLabel.row -= 1
+                # subtract 1 from row number in text file
             for i in self.note_button_list[self.toDelete:]:
                 i.grid(row=i.grid_info()["row"] - 1)
                 i.configure(command=lambda idx=self.toDelete: self.notepads[idx].openOverride())
+                print(i.grid_info()["row"])
                 self.toDelete += 1
+            for x in self.notepads:
+                x.saveFile()
         if(len(self.notepads) == 0):
             self.no_note_cover.pack()
             self.root.update()
@@ -453,13 +464,9 @@ class Dock(object):
         row1 = target1.grid_info()["row"]
         row2 = target2.grid_info()["row"]
         target1.grid(row=row2)
-        # self.notepads[whatever equals target1].titleLabel.row = row2
-        # self.notepads[row1].titleLabel.row = row2
         target1.configure(bg=target1.bgcolor)
         target1.selected = False
         target2.grid(row=row1)
-        # self.notepads[whatever equals target2].titleLabel.row = row1
-        # self.notepads[row2].titleLabel.row = row1
         target2.configure(bg=secondOriginalColor)
         target2.selected = False
         for i in range(len(self.note_button_list)):
