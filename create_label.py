@@ -13,7 +13,11 @@ class create_label(tk.Label):
         self.newParent = None
         self.row = None 
 
+    # These three functions are for the title on each note. This allows for double clicking to enter input
+    # into the entry and determines how the input is passed by either canceling the input (clicking out of the entry)
+    # or pressing "Enter" to confirm input
     def edit_start(self, event=None):
+
         self.entry.place(relx=.5, rely=.5, relwidth=1.0, relheight=1.0, anchor="center")
         self.entry.focus_set()
 

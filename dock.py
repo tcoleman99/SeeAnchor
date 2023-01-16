@@ -39,6 +39,7 @@ class Dock(object):
         self.secondaryColor = "SkyBlue1"
         self.font = "Forte"
 
+        # Checking to see if initial directories exist, if not creates them for storing note and reminder details
         self.notes_path = "C:\See Anchor\\Notes\\"
         self.reminders_path = "C:\See Anchor\\Reminders\\"
         try:
@@ -249,11 +250,11 @@ class Dock(object):
         dir = os.listdir(self.notes_path)
         self.note_order = []
         if(len(dir) == 0):
-            print("empty")
+            print("Notes folder empty")
         else:
             self.no_note_cover.pack_forget()
             count = 0
-            for filename in os.listdir(self.notes_path):
+            for filename in dir:
                 for x in range(len(dir)):
                     f = open(self.notes_path + filename, 'r')
                     Lines = f.readlines()
@@ -265,11 +266,15 @@ class Dock(object):
                 with open(os.path.join(self.notes_path, filename), 'r'):
                     self.read_note(self.notes_path + filename, count)
                     count += 1
-            # for x in range(len(self.note_button_list)):
-            #     if(self.notepads[x].titleLabel.row == x):
-            #         self.note_button_list[x].grid(column=0, columnspan=2, row=x, sticky=tk.N+tk.S+tk.E+tk.W, pady=(0, 10))
-            #     else:
-            #         pass
+        dir = os.listdir(self.reminders_path)
+        if(len(dir) == 0):
+            print("Reminders folder empty")
+        else:
+            count = 0
+            for filename in dir:
+                with open(os.path.join(self.reminders_path, filename), 'r'):
+                    self.read_reminder(self.reminders_path + filename)
+                    count += 1
 
         # Sets the app to always be in foreground and runs
         self.root.attributes("-topmost", True)
@@ -281,6 +286,7 @@ class Dock(object):
     # *       NAVIGATION       *
     # **************************
 
+    # Arrow right and left functions are for switching between reminder and note views
     def arrow_right(self):
         self.testlabel.configure(text="REMINDERS")
         self.buttonFrame.place_forget()
@@ -300,7 +306,7 @@ class Dock(object):
         self.left["state"] = DISABLED
         self.right["state"] = NORMAL
 
-    # Minimize Dock
+    # Minimize Dock to a small button above the taskbar
     def min_but(self):
         self.root.geometry('%dx%d+%d+%d' % (self.screen_width - self.maximize.winfo_x(), 25, self.maximize.winfo_x(), (self.screen_height - 65)))
         self.root.configure(bg="#add123")
@@ -319,7 +325,7 @@ class Dock(object):
             x.closeOverride()  
         self.root.update_idletasks()
 
-    # Maximize Dock
+    # Maximize Dock to view notes and reminders
     def max_but(self):
         self.root.overrideredirect(True)
         self.root.geometry('%dx%d+%d+%d' % (self.w, self.h, self.x, self.y))
@@ -376,6 +382,7 @@ class Dock(object):
                     selectedBut = note  # Using note seems to only use the last index in list instead of note with selected == True
                     self.notepadButton.configure(command=lambda: self.swap(selectedBut, self.notepadButton))
 
+    # For when the application is first ran, checks for existing notes and adds them back to the dock with their details and position
     def read_note(self, file, index):
         from notepad import Notepad
         f = open(file, 'r')
@@ -400,6 +407,7 @@ class Dock(object):
         self.note_count += 1
         self.notepads[index].closeOverride()
 
+    # Deletes note and removes txt file with note details
     def delete_note(self, button):
         answer = askyesno(title="Confirm", message="Are you sure you want to delete this note? You will not be able to revert this decision.")
         if answer:
@@ -472,7 +480,7 @@ class Dock(object):
         for i in range(len(self.note_button_list)):
             self.note_button_list[i].configure(command=lambda idx=i: self.first_selection(self.note_button_list[idx]))
 
-    # Captures the whole window for scrollbar of note list
+    # Next three functions are for capturing the whole window for scrollbar of note and reminder lists
     def mousewheel_bound(self, event):
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
     
@@ -486,6 +494,7 @@ class Dock(object):
     # *          REMINDERS          *
     # *******************************
 
+    # For creating a new reminder, reminder set up page is displayed.
     def define_reminder(self):
         self.reminderList.pack_forget()
         self.hours.delete(0, "end")
@@ -512,6 +521,7 @@ class Dock(object):
         self.reminderFrame.configure(bg="gray39")
         self.hours.focus_set()
 
+    # Creates a new reminder and a new button for each reminder for viewing reminder details
     def create_reminder(self):
         if(len(self.reminders) == 0):
             self.t1.pack_forget()
@@ -522,7 +532,8 @@ class Dock(object):
         else:
             self.reminderFrame.pack_forget()
             self.reminderList.pack()
-            roach = reminder.Reminder(self, self.hours.get(), self.minutes.get(), self.clicker.get(), self.cal.get_date(), self.title.get(), self.description.get(1.0, "end-1c"), self.reminder_count)
+            roach = reminder.Reminder(self, self.hours.get(), self.minutes.get(), self.clicker.get(), self.cal.get_date(), self.title.get(), self.description.get(1.0, "end-1c"), False, self.reminder_count)
+            roach.check_expire()
             self.reminders.append(roach)
             self.reminderFrame.configure(bg="gray39")
             if(len(self.reminders[self.reminder_count].title) > 15):
@@ -530,11 +541,18 @@ class Dock(object):
             else:
                 tempTitle = self.reminders[self.reminder_count].title
             button_text = tempTitle + " -- " + self.reminders[self.reminder_count].date + " - " + str(self.reminders[self.reminder_count].displayhours) + ":" + str(self.reminders[self.reminder_count].min) + " " + self.reminders[self.reminder_count].ampm
-            self.reminderButton = custom_button.custom_button(self.RL_scrollable_frame, text=button_text, width=36, command=lambda: self.open_reminder(roach), bg="seagreen1")
+
+            if(roach.expired == False):
+                self.reminderButton = custom_button.custom_button(self.RL_scrollable_frame, text=button_text, width=36, command=lambda: self.open_reminder(roach), bg="seagreen1")
+            else:
+                self.reminderButton = custom_button.custom_button(self.RL_scrollable_frame, text=button_text, width=36, command=lambda: self.open_reminder(roach), bg="tomato")
+            
             self.reminderButton.grid(column=0, columnspan=2, row=self.reminder_count, sticky=tk.N+tk.S+tk.E+tk.W, pady=(0, 10))
             self.remind_button_list.append(self.reminderButton)
+            roach.saveToFile()
             self.reminder_count += 1
     
+    # For opening a reminder and filling in related details to that reminder
     def open_reminder(self, reminder):
         self.selected_reminder = reminder.row
         self.reminderList.pack_forget()
@@ -556,11 +574,10 @@ class Dock(object):
         reminder.open(self.cal, self.hours, self.minutes, self.clicker, self.title, self.description)
         self.cal.focus_set()
 
+    # Updates reminder with any changes made. Stops old thread and starts new with updated values
     def update_reminder(self):
         proceed = self.entry_check()
-        if(proceed == False):
-            pass
-        else:
+        if(proceed == True):
             self.reminderFrame.pack_forget()
             self.reminderList.pack()
             self.reminders[self.selected_reminder].date = self.cal.get_date()
@@ -578,8 +595,18 @@ class Dock(object):
             
             buttonText = tempTitle + " -- " + self.reminders[self.selected_reminder].date + " - " + str(self.reminders[self.selected_reminder].displayhours) + ":" + str(self.reminders[self.selected_reminder].min) + " " + self.reminders[self.selected_reminder].ampm
             self.remind_button_list[self.selected_reminder].configure(text=buttonText)
+            self.remind_button_list[self.selected_reminder].configure(bg="seagreen1")
+            self.reminders[self.selected_reminder].check_expire()
+            if(self.reminders[self.selected_reminder].expired == True):
+                self.remind_button_list[self.selected_reminder].configure(bg="tomato")
+            else:
+                self.remind_button_list[self.selected_reminder].configure(bg="seagreen1")
             self.reminders[self.selected_reminder].update()
+            self.reminders[self.selected_reminder].saveToFile()
+        else:
+            pass
 
+    # Stopping thread and deleting reminder
     def delete_reminder(self):
         self.reminderFrame.pack_forget()
         if(self.selected_reminder == self.reminder_count - 1):
@@ -599,10 +626,54 @@ class Dock(object):
             self.t1.pack()
         self.root.update()
 
+    def read_reminder(self, file):
+        f = open(file, 'r')
+        Lines = f.readlines()
+        f.close()
+
+        # Compare date in file to current date to determine if reminder expired
+        current_date = date.today()
+        current_date.strftime("%m/%d/%Y")
+        reminder_date = datetime.strptime(Lines[3].rstrip('\n'), "%m/%d/%Y").date()
+        current_time = datetime.now().strftime("%H:%M")
+        reminder_time = Lines[0].rstrip('\n') + ":" + Lines[1].rstrip('\n')
+        self.expired_bool = None
+
+        if((current_date > reminder_date)):
+            self.expired_bool = True
+        elif((current_date == reminder_date) and (current_time >= reminder_time)):
+            self.expired_bool = True
+        else:
+            self.expired_bool = False
+
+        roach = reminder.Reminder(self, Lines[0].rstrip('\n'), Lines[1].rstrip('\n'), Lines[2].rstrip('\n'), Lines[3].rstrip('\n'), Lines[4].rstrip('\n'), Lines[5].rstrip('\n'), self.expired_bool, self.reminder_count)
+        self.reminders.append(roach)
+
+        self.reminderFrame.configure(bg="gray39")
+        self.t1.pack_forget()
+
+        if(len(self.reminders[self.reminder_count].title) > 15):
+            tempTitle = self.reminders[self.reminder_count].title[0:15] + "..."
+        else:
+            tempTitle = self.reminders[self.reminder_count].title
+
+        button_text = tempTitle + " -- " + self.reminders[self.reminder_count].date + " - " + str(self.reminders[self.reminder_count].displayhours) + ":" + str(self.reminders[self.reminder_count].min) + " " + self.reminders[self.reminder_count].ampm
+        if(roach.expired == False):
+            self.reminderButton = custom_button.custom_button(self.RL_scrollable_frame, text=button_text, width=36, command=lambda: self.open_reminder(roach), bg="seagreen1")
+        else:
+            self.reminderButton = custom_button.custom_button(self.RL_scrollable_frame, text=button_text, width=36, command=lambda: self.open_reminder(roach), bg="tomato")
+
+        self.reminderButton.grid(column=0, columnspan=2, row=self.reminder_count, sticky=tk.N+tk.S+tk.E+tk.W, pady=(0, 10))
+        self.remind_button_list.append(self.reminderButton)
+        roach.saveToFile()
+        self.reminder_count += 1
+
+    # When the cursor enters an entry for a reminder it clears the existing text and sets bckgrnd color to white
     def entry_clear(self, e):
         e.widget.delete(0, "end")
         e.widget.configure(bg="white")
 
+    # Checks for valid input for reminder details
     def entry_check(self):
         total = 0
         if(len(self.hours.get()) == 0 or int(self.hours.get()) > 23):
@@ -619,6 +690,7 @@ class Dock(object):
         else:
             return False
 
+    # Hour and minute checks are functions for only checking that specific entry for reminders
     def hour_check(self, e):
         if(not(len(self.hours.get()) == 0 or 0 < int(self.hours.get()) < 24)):
             self.hours.configure(bg="salmon")
@@ -627,6 +699,7 @@ class Dock(object):
         if(not(len(self.minutes.get()) == 0 or 0 <= int(self.minutes.get()) < 60)):
             self.minutes.configure(bg="salmon")
 
+    # Sets hour and minute entries to only allow integers to be entered and a max character count of 2 for each entry
     def charLimit(self, text):
         if(text.get().isdigit() == False):
             text.set(text.get()[:-1])
@@ -642,10 +715,14 @@ class Dock(object):
         if((self.root.focus_get() == focused_entry) and (len(text.get()) == 2)):
             self.drop.focus()
 
+    # Back out of the reminder creation screen to the reminder list
     def goback(self):
         self.reminderFrame.pack_forget()
         self.reminderList.pack()
 
+    # The following functions are for inputting placeholders for the title and description entries.
+    # When the cursor enters either entry, the placeholder is removed for input. These placeholders
+    # are for the user to know which entry is which.
     def title_placeholder(self, e):
         if(self.title.get() == "Title..."):
             self.title.delete(0, "end")

@@ -23,9 +23,7 @@ class Notepad(dock.Dock):
         self.corresponding_button = None
         self.button_row = None
 
-        # self.filename = "file_" + str(random.randrange(10000, 50000))
-
-        # Creating label
+        # This creates the title label for each note
         self.titleLabel = create_label.create_label(self.top, text="Title %d" % (position), bg="light blue", font=("Times 20 italic bold"))
         self.titleLabel.newParent = parent    # To set the main application as the parent of create_label
         self.titleLabel.row = position
@@ -41,10 +39,12 @@ class Notepad(dock.Dock):
         self.notepad.configure(padx=12)
         self.notepad.pack(padx=1, pady=1)
 
+    # Saves file before closing the note.
     def closeOverride(self):
         self.saveFile()
         self.top.withdraw()
 
+    # Sets title colors, saves the file (for when color changes occur), then opens the file
     def openOverride(self):
         self.titleLabel.configure(bg=self.corresponding_button.cget("bg"))
         self.titleLabel.configure(fg=self.corresponding_button.cget("fg"))
@@ -53,6 +53,7 @@ class Notepad(dock.Dock):
         self.saveFile()
         self.top.deiconify()
 
+    # Creating corresponding txt file for note and writes to the file the note information
     def saveFile(self):
         try:
             newFileName = "C:\See Anchor\\Notes\\" + self.titleLabel.cget("text") + ".txt"
@@ -70,6 +71,8 @@ class Notepad(dock.Dock):
             f.close()
         except:
             pass
-
+    
+    # To keep track of a note's corresponding button when reading notes from txt files, this function
+    # is for setting the button to the note
     def set_button(self, button):
         self.corresponding_button = button
