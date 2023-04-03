@@ -6,15 +6,17 @@ import time
 import threading
 from threading import Event
 import threading
-import multiprocessing
 from plyer import notification
 
 class Reminder:
-    def __init__(self, parent, hours, minutes, ampm, date, title, description, expired, count):
+    def __init__(self, parent, uniqueID, expired, hours, minutes, ampm, date, title, description, count):
         self.parent = parent
         self.hours = hours
         self.min = minutes
-        self.ampm = ampm
+        if(int(hours) > 12):
+            self.ampm = "PM"
+        else:
+            self.ampm = ampm
         self.date = date
         self.title = title
         self.desc = description
@@ -22,39 +24,18 @@ class Reminder:
         self.alarm_time = ""
         self.expired = expired
         self.stop_event = Event()
-
         self.displayhours = self.hours
+        self.uniqueID = uniqueID
+
+        self.check_expire()
         self.daemon = threading.Thread(target=self.alarm, args=(self.stop_event,), daemon=True, name="Alarm")
 
-    def check_expire(self):
-        current_date = date.today()
-        current_date.strftime("%m/%d/%Y")
-        reminder_date = datetime.strptime(self.date, "%m/%d/%Y").date()
-        current_time = datetime.now().strftime("%H:%M")
-        reminder_time = self.hours + ":" + self.min
-        if(current_date > reminder_date):
-            self.expired = True
-            print("1001")
-        elif((current_date == reminder_date) and (current_time >= reminder_time)):
-            self.expired = True
-            print("1002")
+        if(self.expired == False):
+            self.daemon.start()
         else:
-            self.expired = False
-            print("1003")
+            pass
 
-        # if(self.expired == False):
-        #     print("Start")
-        #     if(self.daemon.is_alive):
-        #         self.stop_event.clear()
-        #         self.daemon.start()
-        #     else:
-        #         self.daemon.start()
-        # else:
-        #     print("Not start")
-        #     pass
-
-
-    def alarm(self, event):
+    def check_expire(self):
         if(0 <= int(self.hours) < 10 and self.ampm == "AM" and self.hours[0] != "0"):
             self.displayhours = self.hours
             self.hours = "0" + self.hours
@@ -64,7 +45,20 @@ class Reminder:
         elif(int(self.hours) == 12 and self.ampm == "AM"):
             self.displayhours = self.hours
             self.hours = "00"
-        
+
+        current_date = date.today()
+        current_date.strftime("%m/%d/%Y")
+        reminder_date = datetime.strptime(self.date, "%m/%d/%Y").date()
+        current_time = datetime.now().strftime("%H:%M")
+        reminder_time = str(self.hours) + ":" + self.min
+        if(current_date > reminder_date):
+            self.expired = True
+        elif((current_date == reminder_date) and (current_time >= reminder_time)):
+            self.expired = True
+        else:
+            self.expired = False
+
+    def alarm(self, event):        
         self.alarm_time = str(self.hours) + ":" + self.min + ":00"
 
         if(self.expired == False):
@@ -75,6 +69,7 @@ class Reminder:
                 now = current_time.strftime("%H:%M:%S") # Set to 24 hour to accept both 12 hour as well
                 date = current_time.strftime("%m/%d/%Y")
                 if(now == self.alarm_time and date == self.date):
+                    print(self.alarm_time)
                     notification.notify(title=self.title, message=self.desc, timeout=1)
                     self.expired = True
                     self.parent.remind_button_list[self.row].configure(bg="tomato")
@@ -117,13 +112,14 @@ class Reminder:
         dentry.insert(1.0, self.desc)
 
     def saveToFile(self):
-        remind_file_name = "C:\See Anchor\\Reminders\\Reminder_" + str(self.row) + ".txt"
+        remind_file_name = "C:\See Anchor\\Reminders\\" + self.title + "_" + str(self.uniqueID) + ".txt"
         f = open(remind_file_name, 'w')
+        f.write(str(self.uniqueID) + "\n")
+        f.write(str(self.expired) + "\n")
         f.write(str(self.hours) + "\n")
         f.write(str(self.min) + "\n")
         f.write(self.ampm + "\n")
         f.write(self.date + "\n")
         f.write(self.title + "\n")
         f.write(self.desc + "\n")
-        f.write(str(self.expired) + "\n")
         f.close()

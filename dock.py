@@ -10,7 +10,7 @@ from functools import partial
 from plyer import notification
 from datetime import datetime
 from datetime import date
-import time
+import random
 from tkinter.messagebox import askyesno
 from tkinter import *
 from tkcalendar import Calendar
@@ -392,7 +392,8 @@ class Dock(object):
         self.notepads[index].titleLabel.configure(bg=Lines[1].rstrip('\n'))
         self.notepads[index].titleLabel.configure(fg=Lines[2].rstrip('\n'))
         self.notepads[index].titleLabel.configure(text=Lines[3].rstrip('\n'))
-        self.notepads[index].notepad.insert(INSERT, Lines[4:])
+        for x in Lines[4:]:
+            self.notepads[index].notepad.insert(INSERT, x)
         f.close()
         self.notepadButton = custom_button.custom_button(self.scrollable_frame, text=self.notepads[index].titleLabel.cget("text"), width=32, command=lambda: [self.notepads[index].openOverride()], relief="flat", font=(self.font, "12"), bg=self.notepads[index].titleLabel.cget("bg"), fg=self.notepads[index].titleLabel.cget("fg"))
         self.note_button_list.append(self.notepadButton)
@@ -532,8 +533,8 @@ class Dock(object):
         else:
             self.reminderFrame.pack_forget()
             self.reminderList.pack()
-            roach = reminder.Reminder(self, self.hours.get(), self.minutes.get(), self.clicker.get(), self.cal.get_date(), self.title.get(), self.description.get(1.0, "end-1c"), False, self.reminder_count)
-            roach.check_expire()
+            uniqueID = random.randint(1000, 9999)
+            roach = reminder.Reminder(self, uniqueID, False, self.hours.get(), self.minutes.get(), self.clicker.get(), self.cal.get_date(), self.title.get(), self.description.get(1.0, "end-1c"), self.reminder_count)
             self.reminders.append(roach)
             self.reminderFrame.configure(bg="gray39")
             if(len(self.reminders[self.reminder_count].title) > 15):
@@ -584,6 +585,8 @@ class Dock(object):
             self.reminders[self.selected_reminder].hours = self.hours.get()
             self.reminders[self.selected_reminder].min = self.minutes.get()
             self.reminders[self.selected_reminder].ampm = self.clicker.get()
+            if(self.reminders[self.selected_reminder].title != self.title.get()):
+                os.remove(self.reminders_path + self.reminders[self.selected_reminder].title + "_" + str(self.reminders[self.selected_reminder].uniqueID) + ".txt")
             self.reminders[self.selected_reminder].title = self.title.get()
             self.reminders[self.selected_reminder].desc = self.description.get(1.0, "end-1c")
             self.reminders[self.selected_reminder].displayhours = self.hours.get()
@@ -609,6 +612,15 @@ class Dock(object):
     # Stopping thread and deleting reminder
     def delete_reminder(self):
         self.reminderFrame.pack_forget()
+
+        # Delete reminder file
+        path = self.reminders_path + self.reminders[self.selected_reminder].title + "_" + str(self.reminders[self.selected_reminder].uniqueID) + ".txt"
+        os.remove(path)
+
+        # Stops running thread
+        self.reminders[self.selected_reminder].expired = True
+        self.reminders[self.selected_reminder].update()
+
         if(self.selected_reminder == self.reminder_count - 1):
             self.remind_button_list[self.selected_reminder].grid_forget()
         else:
@@ -624,6 +636,7 @@ class Dock(object):
         self.reminderList.pack()
         if(len(self.reminders) == 0):
             self.t1.pack()
+
         self.root.update()
 
     def read_reminder(self, file):
@@ -634,9 +647,9 @@ class Dock(object):
         # Compare date in file to current date to determine if reminder expired
         current_date = date.today()
         current_date.strftime("%m/%d/%Y")
-        reminder_date = datetime.strptime(Lines[3].rstrip('\n'), "%m/%d/%Y").date()
+        reminder_date = datetime.strptime(Lines[5].rstrip('\n'), "%m/%d/%Y").date()
         current_time = datetime.now().strftime("%H:%M")
-        reminder_time = Lines[0].rstrip('\n') + ":" + Lines[1].rstrip('\n')
+        reminder_time = Lines[1].rstrip('\n') + ":" + Lines[2].rstrip('\n')
         self.expired_bool = None
 
         if((current_date > reminder_date)):
@@ -646,7 +659,12 @@ class Dock(object):
         else:
             self.expired_bool = False
 
-        roach = reminder.Reminder(self, Lines[0].rstrip('\n'), Lines[1].rstrip('\n'), Lines[2].rstrip('\n'), Lines[3].rstrip('\n'), Lines[4].rstrip('\n'), Lines[5].rstrip('\n'), self.expired_bool, self.reminder_count)
+        # Gets multi-line description and combines the list items into single string
+        description_string = ""
+        for i in Lines[7:]:
+            description_string = description_string + str(i)
+        
+        roach = reminder.Reminder(self, Lines[0].rstrip('\n'), self.expired_bool, Lines[2].rstrip('\n'), Lines[3].rstrip('\n'), Lines[4].rstrip('\n'), Lines[5].rstrip('\n'), Lines[6].rstrip('\n'), description_string.rstrip('\n'), self.reminder_count)
         self.reminders.append(roach)
 
         self.reminderFrame.configure(bg="gray39")
