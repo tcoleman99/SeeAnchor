@@ -25,6 +25,7 @@ class Dock(object):
 
         # Creating dock widget
         self.root = tk.Tk()
+        self.notificationBubble = tk.Toplevel(self.root)
         self.notepads = []
         self.reminders = []
 
@@ -33,6 +34,7 @@ class Dock(object):
 
         self.note_count = 0
         self.reminder_count = 0
+        self.expired_count = 0
         self.editable = False
 
         self.primaryColor = ""
@@ -164,7 +166,7 @@ class Dock(object):
         self.maximize.menu.add_command(label="Color", command=partial(self.maximize.change_color, self.maximize, self.notepads))
         self.maximize.menu.add_command(label="Font Color", command=partial(self.maximize.font_color, self.maximize, self.notepads))
         self.maximize.menu.add_separator()
-        self.maximize.menu.add_command(label="Unlock", command=partial(self.maximize.anchor_unlock, self.maximize, self.root, self.maximize.x_location, self.notepads))
+        self.maximize.menu.add_command(label="Unlock", command=partial(self.maximize.anchor_unlock, self.maximize, self.root, self.maximize.x_location, self.notepads, self.notificationBubble))
         self.maximize.bind("<Button-3>", self.maximize.color_popup)
 
         newNote = tk.Button(self.buttonFrame, text="+", width=5, command=lambda: self.new_note(self.note_count), font=self.font)
@@ -276,6 +278,16 @@ class Dock(object):
                     self.read_reminder(self.reminders_path + filename)
                     count += 1
 
+        # Bubble for notifications when reminders expire
+        self.notificationBubble.overrideredirect(True)
+        self.notificationBubble.attributes("-topmost", True)
+        self.notificationBubble.geometry('%dx%d+%d+%d' % (20, 20, (self.maximize.x_location - 20), (self.screen_height - 85)))
+        self.notificationBubble.configure(bg="red")
+        self.notificationBubble.withdraw()
+        self.expire_count = 0
+        self.expire_count_num = Label(self.notificationBubble, text=self.expire_count, bg="red", fg="white")
+        self.expire_count_num.pack()
+
         # Sets the app to always be in foreground and runs
         self.root.attributes("-topmost", True)
         self.root.update()
@@ -308,11 +320,20 @@ class Dock(object):
 
     # Minimize Dock to a small button above the taskbar
     def min_but(self):
-        self.root.geometry('%dx%d+%d+%d' % (self.screen_width - self.maximize.winfo_x(), 25, self.maximize.winfo_x(), (self.screen_height - 65)))
+        # self.root.geometry('%dx%d+%d+%d' % (self.screen_width - self.maximize.winfo_x(), 25, self.maximize.winfo_x(), (self.screen_height - 65)))
         self.root.configure(bg="#add123")
         self.maximize.place(x=self.maximize.x_location, y=0, width=27)
         self.root.geometry('%dx%d+%d+%d' % (self.screen_width - self.maximize.x_location, 25, self.maximize.x_location, (self.screen_height - 65)))
         self.maximize.place(x=0)
+
+        # Everytime minimize button is pressed the number of expired reminders is updated
+        for x in self.reminders:
+            if(x.expired == True):
+                self.expire_count = self.expire_count + 1
+        print(self.expire_count)
+        self.expire_count_num.config(text=str(self.expire_count))
+        self.notificationBubble.deiconify()
+
         self.root.wm_attributes("-transparentcolor", "#add123")
         self.root.overrideredirect(True)
         self.titleFrame.pack_forget()
@@ -327,9 +348,11 @@ class Dock(object):
 
     # Maximize Dock to view notes and reminders
     def max_but(self):
+        self.expire_count = 0
         self.root.overrideredirect(True)
         self.root.geometry('%dx%d+%d+%d' % (self.w, self.h, self.x, self.y))
         self.root.configure(bg=self.secondaryColor)
+        self.notificationBubble.withdraw()
         self.maximize.place_forget()
         self.titleFrame.pack(side="top")
         self.rootFrame.pack(pady=(5,0))

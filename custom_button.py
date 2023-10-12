@@ -27,7 +27,7 @@ class custom_button(tk.Button):
         for x in notelist:
             x.saveFile()
 
-    def anchor_unlock(self, button, window, location, notelist):
+    def anchor_unlock(self, button, window, location, notelist, notification_bubble):
         button.locked = False
         window.geometry('%dx%d+%d+%d' % (window.winfo_screenwidth(), 25, 0, window.winfo_screenheight() - 65))
         button.place(x=location)
@@ -36,10 +36,11 @@ class custom_button(tk.Button):
         button.menu.delete("Color")
         button.menu.delete("Font Color")
         button.menu.delete(0)   # Removes the separator line from the right click menu
-        button.menu.add_command(label="Lock", command=partial(button.anchor_lock, button, window, notelist))
+        button.menu.add_command(label="Lock", command=partial(button.anchor_lock, button, window, notelist, notification_bubble))
+        notification_bubble.withdraw()
         custom_button.make_draggable(button)
 
-    def anchor_lock(self, button, window, notelist):
+    def anchor_lock(self, button, window, notelist, notification_bubble):
         button.locked = True
         button.x_location = button.winfo_x()
         tmp_x = button.x_location
@@ -50,7 +51,9 @@ class custom_button(tk.Button):
         button.menu.add_command(label="Color", command=partial(button.change_color, button, notelist))
         button.menu.add_command(label="Font Color", command=partial(button.font_color, button, notelist))
         button.menu.add_separator()
-        button.menu.add_command(label="Unlock", command=partial(button.anchor_unlock, button, window, tmp_x, notelist))
+        button.menu.add_command(label="Unlock", command=partial(button.anchor_unlock, button, window, tmp_x, notelist, notification_bubble))
+        notification_bubble.geometry('%dx%d+%d+%d' % (20, 20, (button.x_location - 20), (window.winfo_screenheight() - 85)))
+        notification_bubble.deiconify()
         custom_button.make_undraggable(button)
 
     def make_draggable(widget):
